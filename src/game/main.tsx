@@ -5,7 +5,7 @@ const SPEED = 320;
 
 export const initGame = (canvas: HTMLCanvasElement) => {
   const {
-    loadSprite,
+    loadSprite: kaboomLoadSprite,
     add,
     sprite,
     pos,
@@ -19,7 +19,10 @@ export const initGame = (canvas: HTMLCanvasElement) => {
     canvas,
   });
 
-  loadSprite("rat", "/sprites/rat.png");
+  const loadSprite = (name: string, path: string) =>
+    kaboomLoadSprite(name, `${import.meta.env.BASE_URL}${path}`);
+
+  loadSprite("rat", "sprites/rat.png");
 
   const rat = add([
     sprite("rat", {
