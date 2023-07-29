@@ -1,5 +1,5 @@
 import kaboom from "kaboom";
-import { setPlaying } from "../GameCanvas";
+import { playing, setPlaying } from "../GameCanvas";
 
 const SPEED = 320;
 
@@ -12,9 +12,7 @@ export const initGame = (canvas: HTMLCanvasElement) => {
     rotate,
     anchor,
     center,
-    onKeyDown,
-    onKeyPress,
-    isFocused,
+    onUpdate,
   } = kaboom({
     canvas,
   });
@@ -33,30 +31,45 @@ export const initGame = (canvas: HTMLCanvasElement) => {
     anchor("center"),
   ]);
 
-  console.log({ rat });
+  const keys = {
+    ArrowLeft: () => {
+      rat.move(-SPEED, 0);
+    },
+    ArrowRight: () => {
+      rat.move(SPEED, 0);
+    },
+    ArrowUp: () => {
+      rat.move(0, -SPEED);
+    },
+    ArrowDown: () => {
+      rat.move(0, SPEED);
+    },
+    Escape: () => {
+      setPlaying(false);
+    },
+  } as const;
 
-  onKeyDown("left", () => {
-    if (!isFocused()) return;
-    rat.move(-SPEED, 0);
+  const isKeyPressed: Record<string, boolean> = Object.keys(keys).reduce(
+    (acc, key) => ({ ...acc, [key]: false }),
+    {}
+  );
+
+  onUpdate(() => {
+    Object.keys(keys).forEach((key) => {
+      if (!isKeyPressed[key]) return;
+      keys[key as keyof typeof keys]();
+    });
   });
 
-  onKeyDown("right", () => {
-    if (!isFocused()) return;
-    rat.move(SPEED, 0);
-  });
+  canvas.onkeydown = (e) => {
+    if (!playing()) return;
+    if (isKeyPressed[e.key]) return;
+    isKeyPressed[e.key] = true;
+  };
 
-  onKeyDown("up", () => {
-    if (!isFocused()) return;
-    rat.move(0, -SPEED);
-  });
-
-  onKeyDown("down", () => {
-    if (!isFocused()) return;
-    rat.move(0, SPEED);
-  });
-
-  onKeyPress("escape", () => {
-    if (!isFocused()) return;
-    setPlaying(false);
-  });
+  canvas.onkeyup = (e) => {
+    if (!playing()) return;
+    if (!isKeyPressed[e.key]) return;
+    isKeyPressed[e.key] = false;
+  };
 };
