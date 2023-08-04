@@ -1,7 +1,7 @@
 import { createEffect, createSignal, onMount } from "solid-js";
 import { initGame } from "./game/main";
 
-export const [playing, setPlaying] = createSignal(false);
+export const [playing, setPlaying] = createSignal(true);
 
 export const GameCanvas = ({
   canvas,
@@ -11,11 +11,18 @@ export const GameCanvas = ({
   onMount(async () => {
     if (!canvas) return;
     initGame(canvas);
-    canvas.blur();
+    if (!playing()) {
+      canvas.blur();
+    }
+
+    const observer = new ResizeObserver(() => {
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    });
+    observer.observe(canvas);
   });
 
   createEffect(() => {
-    console.log({ playing: playing() });
     if (!canvas) return;
     if (playing()) {
       canvas.focus();
