@@ -10,14 +10,15 @@
   },
   "dependencies": {
     "kaboom": "^3000.0.15",
-    "solid-js": "^1.7.8"
+    "npm-check-updates": "^16.10.17",
+    "solid-js": "^1.7.9"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.14",
     "postcss": "^8.4.27",
     "tailwindcss": "^3.3.3",
-    "typescript": "^5.0.2",
-    "vite": "^4.4.5",
+    "typescript": "^5.1.6",
+    "vite": "^4.4.8",
     "vite-plugin-solid": "^2.7.0"
   }
 }
