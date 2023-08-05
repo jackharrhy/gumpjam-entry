@@ -1,10 +1,13 @@
-/* @refresh reload */
 import kaboom from "kaboom";
 import crtFragShader from "./shaders/crt.frag?raw";
 import invertOverTimeFragShader from "./shaders/invert-over-time.frag?raw";
 
 const SPEED = 160;
 const ENEMY_SPEED = SPEED * 0.5;
+
+if (import.meta.hot) {
+  import.meta.hot.invalidate();
+}
 
 export const initGame = () => {
   const {
@@ -33,11 +36,14 @@ export const initGame = () => {
     circle,
     color,
     vec2,
+    deg2rad,
+    wave,
+    z,
   } = kaboom({
     width: 800,
     height: 400,
     letterbox: true,
-    background: [255, 255, 255],
+    background: [0, 0, 0, 0],
   });
 
   loadShader("crt", undefined, crtFragShader);
@@ -46,7 +52,8 @@ export const initGame = () => {
   const loadSprite = (name: string, path: string) =>
     kaboomLoadSprite(name, `${import.meta.env.BASE_URL}${path}`);
 
-  loadSprite("boy", "sprites/the-boy.png");
+  loadSprite("boy-body-from-top", "sprites/boy-body-from-top.png");
+  loadSprite("boy-tail-from-top", "sprites/boy-tail-from-top.png");
   loadSprite("rat", "sprites/rat.png");
 
   /*
@@ -57,11 +64,12 @@ export const initGame = () => {
 
   const boy = add([
     "boy",
-    sprite("boy", {
+    sprite("boy-body-from-top", {
       width: 32,
+      flipY: true,
     }),
     pos(center()),
-    rotate(360),
+    rotate(0),
     anchor("center"),
     area(),
     /*
@@ -70,7 +78,21 @@ export const initGame = () => {
     })),
     */
     timer(),
+    z(1),
   ]);
+
+  const tail = boy.add([
+    "tail",
+    sprite("boy-tail-from-top", { width: 32, flipY: true }),
+    rotate(0),
+    pos(vec2(-2, 20)),
+    anchor(vec2(-0.5, -0.5)),
+    z(-1),
+  ]);
+
+  tail.onUpdate(() => {
+    tail.angle = wave(10, 20, time() * 6);
+  });
 
   onKeyDown("left", () => {
     boy.move(-SPEED, 0);
@@ -97,14 +119,13 @@ export const initGame = () => {
     addKaboom(boy.pos, { scale: 0.5 });
   });
 
-  const deg2rad = (deg: number) => deg * (Math.PI / 180);
   const vecFromAngle = (angle: number, scale: number = 1) => {
     const rad = deg2rad(angle);
     return vec2(Math.cos(rad), Math.sin(rad)).scale(scale);
   };
 
   boy.loop(0.5, () => {
-    const vec = vecFromAngle(boy.angle, 8);
+    const vec = vecFromAngle(boy.angle - 90, boy.width);
 
     add([
       "pew",
