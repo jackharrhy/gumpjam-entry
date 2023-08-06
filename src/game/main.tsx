@@ -58,7 +58,8 @@ export const initGame = () => {
 
   loadSprite("boy-body-from-top", "sprites/boy-body-from-top.png");
   loadSprite("boy-tail-from-top", "sprites/boy-tail-from-top.png");
-  loadSprite("rat", "sprites/rat.png");
+  loadSprite("rat-body-from-top", "sprites/rat-body-from-top.png");
+  loadSprite("rat-tail-from-top", "sprites/rat-tail-from-top.png");
 
   /*
   usePostEffect("crt", () => ({
@@ -193,19 +194,36 @@ export const initGame = () => {
     const width = 32;
     const rat = add([
       "rat",
-      sprite("rat", {
+      sprite("rat-body-from-top", {
         width,
+        flipY: true,
       }),
       pos(vec),
       area(),
       rotate(0),
       anchor("center"),
+      z(-1),
     ]);
+
+    const tail = rat.add([
+      "tail",
+      sprite("rat-tail-from-top", { width: 32, flipY: true }),
+      rotate(0),
+      pos(vec2(0, 20)),
+      anchor(vec2(-0.8, -1)),
+      z(-1),
+    ]);
+
+    tail.onUpdate(() => {
+      tail.angle = wave(-10, 20, time() * 12);
+    });
 
     rat.onUpdate(() => {
       if (!boy.exists()) return;
       const dir = boy.pos.sub(rat.pos).unit();
       rat.move(dir.scale(ENEMY_SPEED));
+
+      rat.angle = rad2deg(Math.atan2(dir.y, dir.x)) + 90;
     });
 
     rat.onCollide("pew", (pew) => {
