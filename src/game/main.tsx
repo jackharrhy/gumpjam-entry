@@ -47,7 +47,7 @@ export const initGame = () => {
     width: 800,
     height: 400,
     letterbox: true,
-    background: [0, 0, 0, 0],
+    background: [255, 255, 255, 255],
   });
 
   loadShader("crt", undefined, crtFragShader);
@@ -102,7 +102,6 @@ export const initGame = () => {
 
   let curBoyTween: TweenController | null = null;
   let curBoyTweenTarget: number | null = null;
-  let curBoyVec = vec2(0, 0);
 
   boy.onUpdate(() => {
     let vec = vec2(0, 0);
@@ -123,40 +122,16 @@ export const initGame = () => {
       vec = vec.add(vec2(0, 1));
     }
 
-    const vecToAngle = (vec: Vec2) => Math.atan2(vec.y, vec.x);
-
-    /*
-    if (vec.len() > 0 && (vec.x !== curBoyVec.x || vec.y !== curBoyVec.y)) {
-      const prevAngle = vecToAngle(curBoyVec);
-      const newAngle = vecToAngle(vec);
-      const changeInAngle = newAngle - prevAngle;
-      const changeInAngleDeg = rad2deg(changeInAngle);
-      const rotationDifference = Math.abs(changeInAngleDeg);
-
-      console.log({ changeInAngleDeg, rotationDifference });
-
-      if (curBoyTween) {
-        curBoyTween.cancel();
-      }
-      curBoyTween = tween(
-        boy.angle,
-        rotationDifference,
-        0.4,
-        (val) => (boy.angle = val),
-        easings.easeOutQuad
-      );
-
-      curBoyVec = vec;
-    }
-    */
-
     if (vec.len() > 0) {
       const vecToAngle = (vec: Vec2) => Math.atan2(vec.y, vec.x);
-      const boyLooking = vecToAngle(vec) * (180 / Math.PI) + 90;
+      let boyLooking = rad2deg(vecToAngle(vec)) + 90;
+
+      const changeInAngle = boy.angle - boyLooking;
+      if (changeInAngle > 180) {
+        boyLooking += changeInAngle > 0 ? 360 : -360;
+      }
 
       if (curBoyTweenTarget !== boyLooking) {
-        console.log({ vec: vec.toString(), boyLooking });
-
         if (curBoyTween) {
           curBoyTween.cancel();
         }
@@ -191,7 +166,7 @@ export const initGame = () => {
   boy.loop(0.5, () => {
     const vec = vecFromAngle(boy.angle - 90, boy.width);
 
-    add([
+    const pew = add([
       "pew",
       circle(3),
       color(0, 0, 100),
@@ -199,7 +174,12 @@ export const initGame = () => {
       move(vec, SPEED * 1.2),
       area(),
       anchor("center"),
+      timer(),
     ]);
+
+    pew.wait(10, () => {
+      destroy(pew);
+    });
   });
 
   const MIN_SPAWN_AWAY = 32 * 6;
@@ -237,7 +217,7 @@ export const initGame = () => {
 
   loop(2, () => {
     if (boy.exists()) {
-      // addRat();
+      addRat();
     }
   });
 };
