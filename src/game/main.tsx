@@ -1,4 +1,4 @@
-import kaboom from "kaboom";
+import kaboom, { TweenController } from "kaboom";
 import crtFragShader from "./shaders/crt.frag?raw";
 import invertOverTimeFragShader from "./shaders/invert-over-time.frag?raw";
 
@@ -37,9 +37,12 @@ export const initGame = () => {
     circle,
     color,
     vec2,
-    deg2rad,
     wave,
     z,
+    tween,
+    easings,
+    deg2rad,
+    rad2deg,
   } = kaboom({
     width: 800,
     height: 400,
@@ -95,22 +98,80 @@ export const initGame = () => {
     tail.angle = wave(10, 20, time() * 6);
   });
 
+  type Vec2 = ReturnType<typeof vec2>;
+
+  let curBoyTween: TweenController | null = null;
+  let curBoyTweenTarget: number | null = null;
+  let curBoyVec = vec2(0, 0);
+
   boy.onUpdate(() => {
+    let vec = vec2(0, 0);
+
     if (isKeyDown("left")) {
-      boy.move(-SPEED, 0);
+      vec = vec.add(vec2(-1, 0));
     }
 
     if (isKeyDown("right")) {
-      boy.move(SPEED, 0);
+      vec = vec.add(vec2(1, 0));
     }
 
     if (isKeyDown("up")) {
-      boy.move(0, -SPEED);
+      vec = vec.add(vec2(0, -1));
     }
 
     if (isKeyDown("down")) {
-      boy.move(0, SPEED);
+      vec = vec.add(vec2(0, 1));
     }
+
+    const vecToAngle = (vec: Vec2) => Math.atan2(vec.y, vec.x);
+
+    /*
+    if (vec.len() > 0 && (vec.x !== curBoyVec.x || vec.y !== curBoyVec.y)) {
+      const prevAngle = vecToAngle(curBoyVec);
+      const newAngle = vecToAngle(vec);
+      const changeInAngle = newAngle - prevAngle;
+      const changeInAngleDeg = rad2deg(changeInAngle);
+      const rotationDifference = Math.abs(changeInAngleDeg);
+
+      console.log({ changeInAngleDeg, rotationDifference });
+
+      if (curBoyTween) {
+        curBoyTween.cancel();
+      }
+      curBoyTween = tween(
+        boy.angle,
+        rotationDifference,
+        0.4,
+        (val) => (boy.angle = val),
+        easings.easeOutQuad
+      );
+
+      curBoyVec = vec;
+    }
+    */
+
+    if (vec.len() > 0) {
+      const vecToAngle = (vec: Vec2) => Math.atan2(vec.y, vec.x);
+      const boyLooking = vecToAngle(vec) * (180 / Math.PI) + 90;
+
+      if (curBoyTweenTarget !== boyLooking) {
+        console.log({ vec: vec.toString(), boyLooking });
+
+        if (curBoyTween) {
+          curBoyTween.cancel();
+        }
+        curBoyTween = tween(
+          boy.angle,
+          boyLooking,
+          0.4,
+          (val) => (boy.angle = val),
+          easings.easeOutQuad
+        );
+        curBoyTweenTarget = boyLooking;
+      }
+    }
+
+    boy.move(vec.scale(SPEED));
   });
 
   boy.onUpdate(() => {
@@ -176,7 +237,7 @@ export const initGame = () => {
 
   loop(2, () => {
     if (boy.exists()) {
-      addRat();
+      // addRat();
     }
   });
 };
