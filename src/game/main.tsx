@@ -25,6 +25,7 @@ export const initGame = () => {
     addKaboom,
     onUpdate,
     onKeyDown,
+    isKeyDown,
     onKeyRelease,
     camPos,
     make,
@@ -94,20 +95,22 @@ export const initGame = () => {
     tail.angle = wave(10, 20, time() * 6);
   });
 
-  onKeyDown("left", () => {
-    boy.move(-SPEED, 0);
-  });
+  boy.onUpdate(() => {
+    if (isKeyDown("left")) {
+      boy.move(-SPEED, 0);
+    }
 
-  onKeyDown("right", () => {
-    boy.move(SPEED, 0);
-  });
+    if (isKeyDown("right")) {
+      boy.move(SPEED, 0);
+    }
 
-  onKeyDown("up", () => {
-    boy.move(0, -SPEED);
-  });
+    if (isKeyDown("up")) {
+      boy.move(0, -SPEED);
+    }
 
-  onKeyDown("down", () => {
-    boy.move(0, SPEED);
+    if (isKeyDown("down")) {
+      boy.move(0, SPEED);
+    }
   });
 
   boy.onUpdate(() => {
