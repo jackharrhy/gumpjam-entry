@@ -103,6 +103,7 @@ export const initGame = () => {
 
   let curBoyTween: TweenController | null = null;
   let curBoyTweenTarget: number | null = null;
+  let lastKnownBoyPos = boy.pos;
 
   boy.onUpdate(() => {
     let vec = vec2(0, 0);
@@ -148,6 +149,7 @@ export const initGame = () => {
     }
 
     boy.move(vec.scale(SPEED));
+    lastKnownBoyPos = boy.pos;
   });
 
   boy.onUpdate(() => {
@@ -219,11 +221,16 @@ export const initGame = () => {
     });
 
     rat.onUpdate(() => {
-      if (!boy.exists()) return;
-      const dir = boy.pos.sub(rat.pos).unit();
-      rat.move(dir.scale(ENEMY_SPEED));
+      const wiggle = wave(-5, 5, time() * 8 + 16);
+      let angle = wiggle;
 
-      rat.angle = rad2deg(Math.atan2(dir.y, dir.x)) + 90;
+      const dir = lastKnownBoyPos.sub(rat.pos).unit();
+      if (boy.exists()) {
+        rat.move(dir.scale(ENEMY_SPEED));
+      }
+      angle += rad2deg(Math.atan2(dir.y, dir.x));
+
+      rat.angle = angle + 90;
     });
 
     rat.onCollide("pew", (pew) => {
