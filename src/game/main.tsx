@@ -12,6 +12,7 @@ if (import.meta.hot) {
 export const initGame = () => {
   const {
     loadSprite: kaboomLoadSprite,
+    loadSound: kaboomLoadSound,
     loadShader,
     add,
     loop,
@@ -23,14 +24,8 @@ export const initGame = () => {
     area,
     destroy,
     addKaboom,
-    onUpdate,
-    onKeyDown,
     isKeyDown,
-    onKeyRelease,
     camPos,
-    make,
-    usePostEffect,
-    shader,
     time,
     timer,
     move,
@@ -45,24 +40,72 @@ export const initGame = () => {
     rad2deg,
     scene,
     go,
+    text,
+    fixed,
+    state,
+    setCursor,
+    rect,
+    scale,
+    outline,
+    hsl2rgb,
+    rgb,
+    play,
+    width,
+    height,
+    wait,
   } = kaboom({
-    width: 800,
-    height: 400,
-    letterbox: true,
     background: [255, 255, 255, 255],
   });
+
+  type Vec2 = ReturnType<typeof vec2>;
+
+  const addButton = (txt: string, p: Vec2, f: () => void) => {
+    const btn = add([
+      rect(240, 80, { radius: 8 }),
+      pos(p),
+      area(),
+      scale(1),
+      anchor("center"),
+      outline(4),
+      color(255, 255, 255),
+      fixed(),
+    ]);
+
+    btn.add([text(txt), anchor("center"), color(0, 0, 0)]);
+
+    btn.onHoverUpdate(() => {
+      btn.scale = vec2(1.2);
+      setCursor("pointer");
+    });
+
+    btn.onHoverEnd(() => {
+      btn.scale = vec2(1);
+      btn.color = rgb(255, 255, 255);
+    });
+
+    btn.onClick(f);
+
+    return btn;
+  };
 
   loadShader("crt", undefined, crtFragShader);
   loadShader("invert_over_time", undefined, invertOverTimeFragShader);
 
+  const withMeta = (path: string) => `${import.meta.env.BASE_URL}${path}`;
+
   const loadSprite = (name: string, path: string) =>
-    kaboomLoadSprite(name, `${import.meta.env.BASE_URL}${path}`);
+    kaboomLoadSprite(name, withMeta(path));
 
   loadSprite("boy-front-on", "sprites/boy-front-on.png");
   loadSprite("boy-body-from-top", "sprites/boy-body-from-top.png");
   loadSprite("boy-tail-from-top", "sprites/boy-tail-from-top.png");
   loadSprite("rat-body-from-top", "sprites/rat-body-from-top.png");
   loadSprite("rat-tail-from-top", "sprites/rat-tail-from-top.png");
+
+  const loadSound = (name: string, path: string) =>
+    kaboomLoadSound(name, withMeta(path));
+
+  loadSound("gump-scream", "sounds/gump-scream.mp3");
 
   /*
   usePostEffect("crt", () => ({
@@ -71,7 +114,7 @@ export const initGame = () => {
   */
 
   scene("start", () => {
-    const boyFrontOn = add([
+    add([
       sprite("boy-front-on", {
         width: 128,
       }),
@@ -82,6 +125,32 @@ export const initGame = () => {
   });
 
   scene("game", () => {
+    const gameState = add([state("playing", ["dead"])]);
+
+    gameState.onStateEnter("dead", () => {
+      play("gump-scream");
+
+      const deadText = add([
+        text("You died!", {
+          size: 64,
+          transform: (idx, ch) => ({
+            color: hsl2rgb((time() * 0.2 + idx * 0.1) % 1, 0.7, 0.8),
+            pos: vec2(0, wave(-4, 4, time() * 4 + idx * 0.5)),
+            scale: wave(1, 1.2, time() * 3 + idx),
+            angle: wave(-9, 9, time() * 3 + idx),
+          }),
+        }),
+        pos(center()),
+        anchor("center"),
+        fixed(),
+        color([255, 0, 0]),
+      ]);
+
+      addButton("Play Again", vec2(width() / 2, height() / 2 + 110), () => {
+        go("game");
+      });
+    });
+
     const boy = add([
       "boy",
       sprite("boy-body-from-top", {
@@ -113,8 +182,6 @@ export const initGame = () => {
     tail.onUpdate(() => {
       tail.angle = wave(10, 20, time() * 6);
     });
-
-    type Vec2 = ReturnType<typeof vec2>;
 
     let curBoyTween: TweenController | null = null;
     let curBoyTweenTarget: number | null = null;
@@ -165,15 +232,13 @@ export const initGame = () => {
 
       boy.move(vec.scale(SPEED));
       lastKnownBoyPos = boy.pos;
-    });
-
-    boy.onUpdate(() => {
       camPos(boy.worldPos());
     });
 
     boy.onCollide("rat", () => {
       destroy(boy);
       addKaboom(boy.pos, { scale: 0.5 });
+      gameState.enterState("dead");
     });
 
     const vecFromAngle = (angle: number, scale: number = 1) => {
@@ -203,6 +268,23 @@ export const initGame = () => {
     const MIN_SPAWN_AWAY = 32 * 6;
     const MAX_SPAWN_AWAY = MIN_SPAWN_AWAY * 2;
     const range = MAX_SPAWN_AWAY - MIN_SPAWN_AWAY;
+
+    let score = 0;
+
+    const scoreText = add([
+      fixed(),
+      anchor("center"),
+      pos(center().x, 32),
+      text(`rats sanitized: ${score}`, {
+        size: 32,
+        align: "center",
+      }),
+      color(0, 0, 100),
+    ]);
+
+    scoreText.onUpdate(() => {
+      scoreText.text = `rats sanitized: ${score.toString()}`;
+    });
 
     const addRat = () => {
       const distance = MIN_SPAWN_AWAY + range * Math.random();
@@ -252,13 +334,16 @@ export const initGame = () => {
         destroy(pew);
         destroy(rat);
         addKaboom(rat.pos, { scale: 0.25 });
+        score += 1;
       });
     };
 
-    loop(2, () => {
-      if (boy.exists()) {
-        addRat();
-      }
+    wait(3, () => {
+      loop(2, () => {
+        if (boy.exists()) {
+          addRat();
+        }
+      });
     });
   });
 
