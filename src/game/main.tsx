@@ -53,6 +53,7 @@ export const initGame = () => {
     width,
     height,
     wait,
+    onUpdate,
   } = kaboom({
     background: [255, 255, 255, 255],
   });
@@ -114,24 +115,39 @@ export const initGame = () => {
   */
 
   scene("start", () => {
-    add([
+    onUpdate(() => setCursor("default"));
+
+    const boyFrontOn = add([
       sprite("boy-front-on", {
         width: 128,
       }),
       pos(center()),
       rotate(0),
+      scale(1),
       anchor("center"),
     ]);
+
+    boyFrontOn.onUpdate(() => {
+      boyFrontOn.angle = wave(-5, 5, time());
+      const scale = wave(0.8, 1.2, time() + 10);
+      boyFrontOn.scale.x = scale;
+      boyFrontOn.scale.y = scale;
+    });
+
+    addButton("start", vec2(width() / 2, height() - height() / 4), () => {
+      go("game");
+    });
   });
 
   scene("game", () => {
+    onUpdate(() => setCursor("default"));
     const gameState = add([state("playing", ["dead"])]);
 
     gameState.onStateEnter("dead", () => {
       play("gump-scream");
 
-      const deadText = add([
-        text("You died!", {
+      add([
+        text("you died!", {
           size: 64,
           transform: (idx, ch) => ({
             color: hsl2rgb((time() * 0.2 + idx * 0.1) % 1, 0.7, 0.8),
@@ -146,7 +162,7 @@ export const initGame = () => {
         color([255, 0, 0]),
       ]);
 
-      addButton("Play Again", vec2(width() / 2, height() / 2 + 110), () => {
+      addButton("play again", vec2(width() / 2, height() / 2 + 110), () => {
         go("game");
       });
     });
@@ -347,6 +363,5 @@ export const initGame = () => {
     });
   });
 
-  go("game");
-  // go("start");
+  go("start");
 };
